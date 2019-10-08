@@ -6,7 +6,6 @@ multiprocessing.
 """
 
 import string
-import sys
 from os import path
 import requests
 from bs4 import BeautifulSoup
@@ -26,7 +25,8 @@ for i, link in enumerate(index_links):
     page = requests.get(link)
 
     if page.status_code != 200:
-        sys.exit()
+        print('Failed requesting page {}!'.format(link))
+        page.raise_for_status()
 
     soup = BeautifulSoup(page.text, 'html.parser')
 
