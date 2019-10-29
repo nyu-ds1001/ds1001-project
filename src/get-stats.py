@@ -20,7 +20,7 @@ def write_infos(q, links_count):
 
     # one folder up, into the 'data' folder
     current_dir = path.dirname(path.abspath(__file__))
-    file_loc = path.join(current_dir, '..', 'data', 'player_infos.csv')
+    file_loc = path.join(current_dir, '..', 'data', 'game_infos.csv')
 
     colnames = [  # column names for the data here
                 ]
@@ -51,31 +51,27 @@ def write_infos(q, links_count):
 if __name__ == '__main__':
     from os import path
     import multiprocessing
-    from parser import get_player_infos
+    from parser import get_player_infos, get_team_links
 
-    queue_size = 1000
+    teams = get_team_links('https://www.baseball-reference.com/teams/', )
 
-    # one folder up, into the 'data' folder
-    current_dir = path.dirname(path.abspath(__file__))
-    file_loc = path.join(current_dir, '..', 'data', 'player_links.txt')
+    years = []
 
-    with open(file_loc, 'r') as f:
-        links = set(f.read().split('\n'))
+    for team in teams:
+        years.append(get_team_years(team))
+
+    games = multiprocessing.Queue()
+    for year in years:
+        get_team_games(year, games)
 
     links_count = multiprocessing.Value('i', 0)
-    q = multiprocessing.Queue()
     infos_q = multiprocessing.Queue()
-
-    # initialize queue filler
-    p1 = multiprocessing.Process(target=queue_filler,
-                                 args=(q, queue_size, links))
-    p1.start()
 
     procs = {}
 
     for p in range(0, 10):
-        procs[p] = multiprocessing.Process(target=get_player_infos,
-                                           args=(q,
+        procs[p] = multiprocessing.Process(target=parse_team_games,
+                                           args=(games,
                                                  infos_q,
                                                  links_count))
         procs[p].start()
@@ -84,8 +80,6 @@ if __name__ == '__main__':
     p2 = multiprocessing.Process(target=write_infos,
                                  args=(infos_q, links_count))
     p2.start()
-
-    p1.join()
 
     for p in range(0, 10):
         procs[p].join()
