@@ -45,9 +45,13 @@ def get_team_years(link):
 
     section = soup.find('table', id='franchise_years')
 
+    year_links = set()
     for hyperlink in section.find_all('a'):
-        full_link = 'http://www.baseballreference.com' + hyperlink.get('href')
-        years_q.append(full_link)
+        link_text = hyperlink.get('href')
+        full_link = 'http://www.baseballreference.com' + link_text
+        if (('201' in link_text) or ('200' in link_text)) and 'teams' in link_text and full_link not in year_links:
+            year_links.add(full_link)
+            years_q.append(full_link)
 
     return years_q
     
@@ -66,8 +70,10 @@ def get_team_games(link, games_q):
     section = soup.find('div', id='timeline_results')
 
     for hyperlink in section.find_all('a'):
-        full_link = 'http://www.baseballreference.com' + hyperlink.get('href')
-        games_q.put(full_link)
+        link_text = hyperlink.get('href')
+        if link_text is not None:
+            full_link = 'http://www.baseballreference.com' + link_text
+            games_q.put(full_link)
 
 
 def parse_team_games(q, infos_q, links_count):
@@ -109,22 +115,24 @@ def parse_team_games(q, infos_q, links_count):
             if any((x.string or '').startswith('Venue') for x in info_div.children):
                 venue = info_div.contents[1].split(': ')[1]
             elif any((x.string or '').startswith('Start Time') for x in info_div.children):
-                start_time = info_div.contents.split('Start Time: ')[1]
+                start_time = info_div.contents[0].split('Start Time: ')[1]
             elif any(any((x.string or '').startswith(y) for y in weekdays) for x in info_div.children):
-                date_played = info_div.contents[0].split('day, ')[1]
+                date_played = '"{}"'.format(info_div.contents[0].split('day, ')[1])
 
         comments = soup.find_all(text=lambda text:isinstance(text, Comment))
 
         # - team offense infos
+        home_name = ''.join(''.join(home_team.split('.')).split(' '))
+        away_name = ''.join(''.join(away_team.split('.')).split(' '))
         # batting
-        home_table = ''.join(home_team.split(' ')) + 'batting'
+        home_table = home_name + 'batting'
 
         comment = comments[[i
                             for i, com in enumerate(comments)
                             if home_table in com][0]]
         home_batting = BeautifulSoup(comment, 'html.parser')
 
-        away_table = ''.join(away_team.split(' ')) + 'batting'
+        away_table = away_name + 'batting'
 
         comment = comments[[i
                             for i, com in enumerate(comments)
@@ -133,14 +141,14 @@ def parse_team_games(q, infos_q, links_count):
 
         # gather total stats and ignore the details column
         home_stats = [(stat.attrs['data-stat'],
-                       float(stat.contents[0]))
+                       str(float(stat.contents[0])))
                       for stat in (home_batting.find(id=home_table)
                                                .find('tfoot')
                                                .find_all('td'))
                       if stat.attrs['data-stat'] != 'details']
 
         away_stats = [(stat.attrs['data-stat'],
-                       float(stat.contents[0]))
+                       str(float(stat.contents[0])))
                       for stat in (away_batting.find(id=away_table)
                                                .find('tfoot')
                                                .find_all('td'))
@@ -149,14 +157,14 @@ def parse_team_games(q, infos_q, links_count):
         # - starter infos (ERA, avg IP, WHIP)
         # pitching
 
-        home_table = ''.join(home_team.split(' ')) + 'pitching'
+        home_table = home_name + 'pitching'
 
         comment = comments[[i
                             for i, com in enumerate(comments)
                             if home_table in com][0]]
         home_pitching = BeautifulSoup(comment, 'html.parser')
 
-        away_table = ''.join(away_team.split(' ')) + 'pitching'
+        away_table = away_name + 'pitching'
 
         comment = comments[[i
                             for i, com in enumerate(comments)
@@ -165,7 +173,7 @@ def parse_team_games(q, infos_q, links_count):
 
         # gather total stats and ignore the inherited runners/score columns
         home_stats_pitching = [(stat.attrs['data-stat'],
-                                float(stat.contents[0]))
+                                str(float(stat.contents[0])))
                                for stat in (home_pitching.find(id=home_table)
                                                          .find('tbody')
                                                          .find('tr')
@@ -174,7 +182,7 @@ def parse_team_games(q, infos_q, links_count):
                                                                   'inherited_score']]
 
         away_stats_pitching = [(stat.attrs['data-stat'],
-                                float(stat.contents[0]))
+                                str(float(stat.contents[0])))
                                for stat in (away_pitching.find(id=away_table)
                                                          .find('tbody')
                                                          .find('tr')
@@ -187,7 +195,7 @@ def parse_team_games(q, infos_q, links_count):
 
         # gather total stats and ignore the inherited runners/score columns
         home_stats_team_pitching = [(stat.attrs['data-stat'],
-                                float(stat.contents[0]))
+                                str(float(stat.contents[0])))
                                for stat in (home_pitching.find(id=home_table)
                                                          .find('tfoot')
                                                          .find_all('td'))
@@ -195,7 +203,7 @@ def parse_team_games(q, infos_q, links_count):
                                                                   'inherited_score']]
 
         away_stats_team_pitching = [(stat.attrs['data-stat'],
-                                float(stat.contents[0]))
+                                str(float(stat.contents[0])))
                                for stat in (away_pitching.find(id=away_table)
                                                          .find('tfoot')
                                                          .find_all('td'))
@@ -206,12 +214,13 @@ def parse_team_games(q, infos_q, links_count):
 
         comment = comments[[i
                             for i, com in enumerate(comments)
-                            if 'div_1954100963' in com][0]]
+                            if (re.search(r'div_\d{10}', com) is not None) and
+                            ('Start Time Weather' in com)][0]]
         weather_data = BeautifulSoup(comment, 'html.parser')
 
         for info_div in weather_data.find_all('div'):
             if any((x.string or '').startswith('Start Time Weather') for x in info_div.children):
-                weather = info_div.contents[1].split(': ')[1]
+                weather = '"{}"'.format(info_div.contents[1].strip())
 
         # errors
 
@@ -219,10 +228,10 @@ def parse_team_games(q, infos_q, links_count):
                               class_='linescore nohover stats_table no_freeze').find('tbody')
 
         away_line = linescore.find('tr')
-        away_errors = int(away_line.find_all('td')[-1].contents[0])
+        away_errors = str(int(away_line.find_all('td')[-1].contents[0]))
 
         home_line = away_line.find_next_sibling('tr')
-        home_errors = int(away_line.find_all('td')[-1].contents[0])
+        home_errors = str(int(away_line.find_all('td')[-1].contents[0]))
 
         # - park stats (sizes down RF, CF, LF, foul territory %?) are missing
 
