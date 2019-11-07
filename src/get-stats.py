@@ -90,6 +90,8 @@ def write_infos(q, links_count):
                 'LD_player_away',
                 'Unk_player_away',
                 'GSc_player_away',
+                'IR_player_away',
+                'IS_player_away',
                 'WPA_player_away',
                 'aLI_player_away',
                 'RE24_player_away',
@@ -112,6 +114,8 @@ def write_infos(q, links_count):
                 'LD_player_home',
                 'Unk_player_home',
                 'GSc_player_home',
+                'IR_player_home',
+                'IS_player_home',
                 'WPA_player_home',
                 'aLI_player_home',
                 'RE24_player_home',
@@ -134,6 +138,8 @@ def write_infos(q, links_count):
                 'LD_team_away',
                 'Unk_team_away',
                 'GSc_team_away',
+                'IR_team_away',
+                'IS_team_away',
                 'WPA_team_away',
                 'aLI_team_away',
                 'RE24_team_away',
@@ -156,6 +162,8 @@ def write_infos(q, links_count):
                 'LD_team_home',
                 'Unk_team_home',
                 'GSc_team_home',
+                'IR_team_home',
+                'IS_team_home',
                 'WPA_team_home',
                 'aLI_team_home',
                 'RE24_team_home',
@@ -165,13 +173,13 @@ def write_infos(q, links_count):
         f.write(','.join(colnames) + '\n')
 
         # give the queue some time to fill up
-        time.sleep(10)
-        while written < links_count.value:
+        time.sleep(30)
+        while written < 97200:
             try:
                 infos = q.get(timeout=5)
             except queue.Empty:
                 print('    Infos queue empty!    ')
-                time.sleep(1)
+                time.sleep(30)
                 continue
 
             f.write(','.join(infos) + '\n')
@@ -180,7 +188,7 @@ def write_infos(q, links_count):
                 print('\rParsed {}/{} in {}'.format(written,
                                                     links_count.value,
                                                     time.time() - start_time))
-            time.sleep(0.1)
+
         print('exiting write_infos')
     return
 

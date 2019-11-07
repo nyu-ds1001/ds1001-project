@@ -30,8 +30,8 @@ def get_team_links(link):
     return links_q
 
 
-def get_team_years(link):
-    import requests
+def get_team_years(lnk):
+    import requestsi
     from bs4 import BeautifulSoup
 
     years_q = []
@@ -91,166 +91,182 @@ def parse_team_games(q, infos_q, links_count):
             print('     Links queue empty!    ')
             break
 
-        page = requests.get(link)
-        if page.status_code != 200:
-            print('Failed requesting page {}!'.format(link))
-            page.raise_for_status()
+        try:
+            page = requests.get(link, timeout=10)
 
-        soup = BeautifulSoup(page.text, 'html.parser')
+            if page.status_code != 200:
+                print('Failed requesting page {}!'.format(link))
+                page.raise_for_status()
 
-        # find all the info we need and add to infos list
+            soup = BeautifulSoup(page.text, 'html.parser')
 
-        # - matchup info (what teams?)
-        
-        h1 = soup.find('h1', )
-        teams = re.search(r'(.+?) at (.+?) Box Score', h1.string)
-        away_team = teams.group(1)
-        home_team = teams.group(2)
+            # find all the info we need and add to infos list
 
-        # - time of game (time of day, day of week, year played, month played)
+            # - matchup info (what teams?)
 
-        div = soup.find('div', class_='scorebox_meta')
+            h1 = soup.find('h1', )
+            teams = re.search(r'(.+?) at (.+?) Box Score', h1.string)
+            away_team = teams.group(1)
+            home_team = teams.group(2)
 
-        for info_div in div.find_all('div'):
-            if any((x.string or '').startswith('Venue') for x in info_div.children):
-                venue = info_div.contents[1].split(': ')[1]
-            elif any((x.string or '').startswith('Start Time') for x in info_div.children):
-                start_time = info_div.contents[0].split('Start Time: ')[1]
-            elif any(any((x.string or '').startswith(y) for y in weekdays) for x in info_div.children):
-                date_played = '"{}"'.format(info_div.contents[0].split('day, ')[1])
+            # - time of game (time of day, day of week, year played, month played)
 
-        comments = soup.find_all(text=lambda text:isinstance(text, Comment))
+            div = soup.find('div', class_='scorebox_meta')
 
-        # - team offense infos
-        home_name = ''.join(''.join(home_team.split('.')).split(' '))
-        away_name = ''.join(''.join(away_team.split('.')).split(' '))
-        # batting
-        home_table = home_name + 'batting'
+            for info_div in div.find_all('div'):
+                if any((x.string or '').startswith('Venue') for x in info_div.children):
+                    venue = info_div.contents[1].split(': ')[1]
+                elif any((x.string or '').startswith('Start Time') for x in info_div.children):
+                    start_time = info_div.contents[0].split('Start Time: ')[1]
+                elif any(any((x.string or '').startswith(y) for y in weekdays) for x in info_div.children):
+                    date_played = '"{}"'.format(info_div.contents[0].split('day, ')[1])
 
-        comment = comments[[i
-                            for i, com in enumerate(comments)
-                            if home_table in com][0]]
-        home_batting = BeautifulSoup(comment, 'html.parser')
+            comments = soup.find_all(text=lambda text:isinstance(text, Comment))
 
-        away_table = away_name + 'batting'
+            # - team offense infos
+            home_name = ''.join(''.join(home_team.split('.')).split(' '))
+            away_name = ''.join(''.join(away_team.split('.')).split(' '))
+            # batting
+            home_table = home_name + 'batting'
 
-        comment = comments[[i
-                            for i, com in enumerate(comments)
-                            if away_table in com][0]]
-        away_batting = BeautifulSoup(comment, 'html.parser')
+            comment = comments[[i
+                                for i, com in enumerate(comments)
+                                if home_table in com][0]]
+            home_batting = BeautifulSoup(comment, 'html.parser')
 
-        # gather total stats and ignore the details column
-        home_stats = [(stat.attrs['data-stat'],
-                       str(float(stat.contents[0])))
-                      for stat in (home_batting.find(id=home_table)
-                                               .find('tfoot')
-                                               .find_all('td'))
-                      if stat.attrs['data-stat'] != 'details']
+            away_table = away_name + 'batting'
 
-        away_stats = [(stat.attrs['data-stat'],
-                       str(float(stat.contents[0])))
-                      for stat in (away_batting.find(id=away_table)
-                                               .find('tfoot')
-                                               .find_all('td'))
-                      if stat.attrs['data-stat'] != 'details']
+            comment = comments[[i
+                                for i, com in enumerate(comments)
+                                if away_table in com][0]]
+            away_batting = BeautifulSoup(comment, 'html.parser')
 
-        # - starter infos (ERA, avg IP, WHIP)
-        # pitching
+            # gather total stats and ignore the details column
+            home_stats = [(stat.attrs['data-stat'],
+                           str(float(stat.contents[0])))
+                          for stat in (home_batting.find(id=home_table)
+                                                   .find('tfoot')
+                                                   .find_all('td'))
+                          if stat.attrs['data-stat'] != 'details']
 
-        home_table = home_name + 'pitching'
+            away_stats = [(stat.attrs['data-stat'],
+                           str(float(stat.contents[0])))
+                          for stat in (away_batting.find(id=away_table)
+                                                   .find('tfoot')
+                                                   .find_all('td'))
+                          if stat.attrs['data-stat'] != 'details']
 
-        comment = comments[[i
-                            for i, com in enumerate(comments)
-                            if home_table in com][0]]
-        home_pitching = BeautifulSoup(comment, 'html.parser')
+            # - starter infos (ERA, avg IP, WHIP)
+            # pitching
 
-        away_table = away_name + 'pitching'
+            home_table = home_name + 'pitching'
 
-        comment = comments[[i
-                            for i, com in enumerate(comments)
-                            if away_table in com][0]]
-        away_pitching = BeautifulSoup(comment, 'html.parser')
+            comment = comments[[i
+                                for i, com in enumerate(comments)
+                                if home_table in com][0]]
+            home_pitching = BeautifulSoup(comment, 'html.parser')
 
-        # gather total stats and ignore the inherited runners/score columns
-        home_stats_pitching = [(stat.attrs['data-stat'],
-                                str(float(stat.contents[0])))
-                               for stat in (home_pitching.find(id=home_table)
-                                                         .find('tbody')
-                                                         .find('tr')
-                                                         .find_all('td'))
-                               if stat.attrs['data-stat'] not in ['inherited_runners',
-                                                                  'inherited_score']]
+            away_table = away_name + 'pitching'
 
-        away_stats_pitching = [(stat.attrs['data-stat'],
-                                str(float(stat.contents[0])))
-                               for stat in (away_pitching.find(id=away_table)
-                                                         .find('tbody')
-                                                         .find('tr')
-                                                         .find_all('td'))
-                               if stat.attrs['data-stat'] not in ['inherited_runners',
-                                                                  'inherited_score']]
+            comment = comments[[i
+                                for i, com in enumerate(comments)
+                                if away_table in com][0]]
+            away_pitching = BeautifulSoup(comment, 'html.parser')
 
-        # bullpen ERA, fielding %, errors/9 IP, unearned runs/9 IP, stolen base %
-        # pitching
+            # gather total stats and ignore the inherited runners/score columns
+            home_stats_pitching = [(stat.attrs['data-stat'],
+                                    str(float(stat.contents[0])))
+                                   if stat.contents
+                                   else (stat.attrs['data-stat'],
+                                         'nan')
+                                   for stat in (home_pitching.find(id=home_table)
+                                                             .find('tbody')
+                                                             .find('tr')
+                                                             .find_all('td'))
+                                   ]
 
-        # gather total stats and ignore the inherited runners/score columns
-        home_stats_team_pitching = [(stat.attrs['data-stat'],
-                                str(float(stat.contents[0])))
-                               for stat in (home_pitching.find(id=home_table)
-                                                         .find('tfoot')
-                                                         .find_all('td'))
-                               if stat.attrs['data-stat'] not in ['inherited_runners',
-                                                                  'inherited_score']]
+            away_stats_pitching = [(stat.attrs['data-stat'],
+                                    str(float(stat.contents[0])))
+                                   if stat.contents
+                                   else (stat.attrs['data-stat'],
+                                         'nan')
+                                   for stat in (away_pitching.find(id=away_table)
+                                                             .find('tbody')
+                                                             .find('tr')
+                                                             .find_all('td'))
+                                   ]
 
-        away_stats_team_pitching = [(stat.attrs['data-stat'],
-                                str(float(stat.contents[0])))
-                               for stat in (away_pitching.find(id=away_table)
-                                                         .find('tfoot')
-                                                         .find_all('td'))
-                               if stat.attrs['data-stat'] not in ['inherited_runners',
-                                                                  'inherited_score']]
+            # bullpen ERA, fielding %, errors/9 IP, unearned runs/9 IP, stolen base %
+            # pitching
 
-        # - wind, sun, rain, humidity, weather in general
+            # gather total stats and ignore the inherited runners/score columns
+            home_stats_team_pitching = [(stat.attrs['data-stat'],
+                                    str(float(stat.contents[0])))
+                                   if stat.contents
+                                   else (stat.attrs['data-stat'],
+                                         'nan')
+                                   for stat in (home_pitching.find(id=home_table)
+                                                             .find('tfoot')
+                                                             .find_all('td'))
+                                   ]
 
-        comment = comments[[i
-                            for i, com in enumerate(comments)
-                            if (re.search(r'div_\d{10}', com) is not None) and
-                            ('Start Time Weather' in com)][0]]
-        weather_data = BeautifulSoup(comment, 'html.parser')
+            away_stats_team_pitching = [(stat.attrs['data-stat'],
+                                    str(float(stat.contents[0])))
+                                   if stat.contents
+                                   else (stat.attrs['data-stat'],
+                                         'nan')
+                                   for stat in (away_pitching.find(id=away_table)
+                                                             .find('tfoot')
+                                                             .find_all('td'))
+                                   ]
 
-        for info_div in weather_data.find_all('div'):
-            if any((x.string or '').startswith('Start Time Weather') for x in info_div.children):
-                weather = '"{}"'.format(info_div.contents[1].strip())
+            # - wind, sun, rain, humidity, weather in general
 
-        # errors
+            comment = comments[[i
+                                for i, com in enumerate(comments)
+                                if (re.search(r'div_\d{10}', com) is not None) and
+                                ('Start Time Weather' in com)][0]]
+            weather_data = BeautifulSoup(comment, 'html.parser')
 
-        linescore = soup.find('table',
-                              class_='linescore nohover stats_table no_freeze').find('tbody')
+            for info_div in weather_data.find_all('div'):
+                if any((x.string or '').startswith('Start Time Weather') for x in info_div.children):
+                    weather = '"{}"'.format(info_div.contents[1].strip())
 
-        away_line = linescore.find('tr')
-        away_errors = str(int(away_line.find_all('td')[-1].contents[0]))
+            # errors
 
-        home_line = away_line.find_next_sibling('tr')
-        home_errors = str(int(away_line.find_all('td')[-1].contents[0]))
+            linescore = soup.find('table',
+                                  class_='linescore nohover stats_table no_freeze').find('tbody')
 
-        # - park stats (sizes down RF, CF, LF, foul territory %?) are missing
+            away_line = linescore.find('tr')
+            away_errors = str(int(away_line.find_all('td')[-1].contents[0]))
 
-        infos = [home_team,
-                 away_team,
-                 venue,
-                 start_time,
-                 date_played,
-                 away_errors,
-                 home_errors,
-                 weather,
-                 *[x[1] for x in away_stats],
-                 *[x[1] for x in home_stats],
-                 *[x[1] for x in away_stats_pitching],
-                 *[x[1] for x in home_stats_pitching],
-                 *[x[1] for x in away_stats_team_pitching],
-                 *[x[1] for x in home_stats_team_pitching],
-                 ]
-        infos_q.put(infos)
+            home_line = away_line.find_next_sibling('tr')
+            home_errors = str(int(away_line.find_all('td')[-1].contents[0]))
 
-        with links_count.get_lock():
-            links_count.value += 1
+            # - park stats (sizes down RF, CF, LF, foul territory %?) are missing
+
+            infos = [home_team,
+                     away_team,
+                     venue,
+                     start_time,
+                     date_played,
+                     away_errors,
+                     home_errors,
+                     weather,
+                     *[x[1] for x in away_stats],
+                     *[x[1] for x in home_stats],
+                     *[x[1] for x in away_stats_pitching],
+                     *[x[1] for x in home_stats_pitching],
+                     *[x[1] for x in away_stats_team_pitching],
+                     *[x[1] for x in home_stats_team_pitching],
+                     ]
+            infos_q.put(infos)
+
+            with links_count.get_lock():
+                links_count.value += 1
+            if links_count.value % 10 == 0:
+                print('\rParsed {}'.format(links_count.value), end='')
+        except Exception as e:
+            print(link, e)
+            q.put(link)
+            continue
