@@ -14,6 +14,7 @@ def queue_filler(q, queue_size, links):
 
 def write_infos(q, links_count):
     import queue
+    from os import path
 
     written = 0
     start_time = time.time()
@@ -179,7 +180,7 @@ def write_infos(q, links_count):
                 print('\rParsed {}/{} in {}'.format(written,
                                                     links_count.value,
                                                     time.time() - start_time))
-            time.sleep(1)
+            time.sleep(0.1)
         print('exiting write_infos')
     return
 
@@ -187,8 +188,8 @@ def write_infos(q, links_count):
 if __name__ == '__main__':
     from os import path
     import multiprocessing
-    from parser import get_player_infos, get_team_links, get_team_years
-    from parser import get_team_games, parse_team_games
+    from parser_bbref import get_player_infos, get_team_links, get_team_years
+    from parser_bbref import get_team_games, parse_team_games
 
     teams = get_team_links('https://www.baseball-reference.com/teams/', )
 
