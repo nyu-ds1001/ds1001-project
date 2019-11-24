@@ -79,57 +79,17 @@ def EloTeam(df, start_elo, K, lower_bound = 100):
         
     return df
 
-
-
-
-
-# =============================================================================
-# def EloTeam(df, start_elo, K):
-#     import numpy as np
-#     import math
-#     import pandas as pd
-#     
-#     tmp = df.copy(deep = True).sort_values(['date_time'], ascending=1)
-#     tmp['home_win'] = (tmp['R_home']>=tmp['R_away'])
-#     tmp['home'], tmp['away'] = np.nan, np.nan
-#     
-#     USE A DICTIONARY TO SAVE ELO PER TEAM!!!
-#     
-#     d = {i:start_elo for i in sorted(df['home_team'].unique())}
-#     
-#     for i in sorted(tmp['home_team'].unique()):
-#         for j, foo in tmp.iterrows():
-#             if tmp.at[j,'home_team'] == i:
-#                 tmp.at[j,'home'] = start_elo
-#             elif tmp.at[j,'away_team'] == i:
-#                 tmp.at[j,'away'] = start_elo
-#             else:
-#                 continue
-#             break
-#     
-#     for j, row in tmp.iterrows():
-#         row['new_home'], row['new_away'] = np.nan, np.nan
-#         row['elo_prob_home'], row['elo_prob_away'] = np.nan, np.nan
-#         
-#         prob = 1 / (1 + math.pow(10, (row['home'] - row['away']) / 400))
-#         
-#         if (row['home_win'] == 1):
-#             row['new_home'] = row['home'] + K * (1-prob)
-#             row['new_away'] = row['away'] + K * (prob-1)
-#         else:
-#             row['new_home'] = row['home'] + K * (-prob)
-#             row['new_away'] = row['away'] + K * (prob)
-#             
-#         i = 0
-#         for z in range(j+1,len(tmp)):
-#             if tmp.at[z,'home_team'] == row['home_team']:
-#                 tmp.at[z,'home'] = row['new_home']
-#                 i += 1
-#             if tmp.at[z,'away_team'] == row['away_team']:
-#                 tmp.at[z,'away'] = row['new_away']
-#                 i += 1
-#             if i == 2:
-#                 break
-#         
-#         return tmp['home'], tmp['away']
-# =============================================================================
+def MatchUpPitcher(df, stat, lngth_pt=5, lngth_p=30):
+    # Loop over every pitcher
+    for p in range(max(df['home_pitcher'])):
+        # Get pitcher relevant moving average
+        
+        
+    
+    
+    
+    
+    
+    
+    
+    return df
