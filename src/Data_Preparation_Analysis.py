@@ -16,7 +16,7 @@ os.chdir(r"..\src")
 
 # Load local libraries
 from clean_functions import *
-from featgen_functions import MovAveTeam, EloTeam
+from featgen_functions import MovAveTeam, EloTeam, MatchUpPitcher
 
 # Change directory for data
 os.chdir(r"..\data")
@@ -102,3 +102,10 @@ df_des.to_csv(r'data_description.csv')
 
 # Calculate the elo of the teams
 df = EloTeam(df, start_elo = 1000, K = 30)
+
+# Get pitcher performance
+df = MatchUpPitcher(df, 'ERA_player', lngth_pt=5, lngth_p=30)
+
+# Save to csv
+df.to_csv(index=False)
+
