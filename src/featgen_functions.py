@@ -56,7 +56,7 @@ def MovAveTeam(df, stat, lngth):
         
     return rslt['home'], rslt['away']
 
-def EloTeam(df, start_elo, K, lower_bound = 100):
+def EloTeam(df, start_elo, K, lower_bound = 100, reset = True):
     import numpy as np
     
     df = df.sort_values(['date_time'], ascending=1)
@@ -64,8 +64,9 @@ def EloTeam(df, start_elo, K, lower_bound = 100):
     df['home_win'] = (df['R_home'] >= df['R_away'])
 
     year = np.nan
+    d = {i:start_elo for i in sorted(df['home_team'].unique())}
     for j, row in df.iterrows():
-        if row['date_time'].year != year:
+        if row['date_time'].year != year and reset:
             d = {i:start_elo for i in sorted(df['home_team'].unique())}
             year = row['date_time'].year
         

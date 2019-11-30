@@ -107,5 +107,5 @@ df = EloTeam(df, start_elo = 1000, K = 30)
 df = MatchUpPitcher(df, 'ERA_player', lngth_pt=5, lngth_p=30)
 
 # Save to csv
-df.to_csv(index=False)
+df.to_csv('merged_var_generated.csv',index=False)
 
