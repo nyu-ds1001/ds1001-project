@@ -30,8 +30,8 @@ def get_team_links(link):
     return links_q
 
 
-def get_team_years(lnk):
-    import requestsi
+def get_team_years(link):
+    import requests
     from bs4 import BeautifulSoup
 
     years_q = []
@@ -69,11 +69,15 @@ def get_team_games(link, games_q):
 
     section = soup.find('div', id='timeline_results')
 
+    links_set = set()
+
     for hyperlink in section.find_all('a'):
         link_text = hyperlink.get('href')
         if link_text is not None:
             full_link = 'http://www.baseballreference.com' + link_text
-            games_q.put(full_link)
+            if full_link not in links_set:
+                games_q.put(full_link)
+                links_set.add(full_link)
 
 
 def parse_team_games(q, infos_q, links_count):
@@ -241,7 +245,7 @@ def parse_team_games(q, infos_q, links_count):
             away_errors = str(int(away_line.find_all('td')[-1].contents[0]))
 
             home_line = away_line.find_next_sibling('tr')
-            home_errors = str(int(away_line.find_all('td')[-1].contents[0]))
+            home_errors = str(int(home_line.find_all('td')[-1].contents[0]))
 
             # - park stats (sizes down RF, CF, LF, foul territory %?) are missing
 
