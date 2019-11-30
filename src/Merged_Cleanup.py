@@ -9,22 +9,27 @@ import pandas as pd
 import numpy as np
 import math 
 from sklearn import preprocessing
+import os 
+
+# Load local libraries
+from clean_functions import *
 
 #importing dataset
-df = pd.read_csv('merged.csv')
+df = pd.read_csv('merged_var_generated.csv')
 
 #finding games that were definitley rainouts and removing them 
-df.drop(list(df.query('IP_team_home < 9 | IP_team_away < 8').index))
+df = df.drop(list(df.query('IP_team_home < 9 | IP_team_away < 8').index))
 
 #dropping close_odds as we will only use open & renaming some variables
 #for increased clarity 
-df = df.drop(list(df.columns[-3:]), axis=1)
-updated_cols = list(df.columns[:-3]) + ['over_under', 
-                   'under_odds', 'over_odds']
+df = df.drop(list(df.columns[-7:-4]), axis=1)
+
+updated_cols = list(df.columns[:-7]) + ['over_under', 
+                   'under_odds', 'over_odds'] + list(df.columns[-4:])
 df.columns = updated_cols
 
 #Dropping the obvious odds typos from dataset 
-df = df.drop(list(df.loc[df['over_under'] >= 90].index))
+df = df.drop(list(df.loc[df['over_under'] >= 20].index))
 
 #Dropping 4 variables empty variables/they do not exist
 df = df.drop(['IR_player_away', 
@@ -32,39 +37,16 @@ df = df.drop(['IR_player_away',
               'IR_player_home', 
               'IS_player_home',], axis = 1) 
 
-#Dropping variables we cannot define well enough to use 
-#df = df.drop(['WPA_home',
-#              'WPA_away',
-#              'WPA+_home',
-#              'WPA+_away',
-#              'WPA-_home',
-#              'WPA-_away', 
-#              'RE24_away',
-#              'RE24_home',
-#              'RE24_player_away',
-#              'RE24_player_home',
-#              'RE24_team_away',
-#              'RE24_team_home',
-#              'WPA_team_home',
-#              'WPA_team_away',
-#              'aLI_team_home',
-#              'aLI_team_away',
-#              'WPA_player_home',
-#              'WPA_player_away',
-#              'aLI_player_home',
-#              'aLI_player_away'], axis = 1)
-
 #finding games where the would be no target variable
 #because outcome = prediction
 df['Game_score'] = df['R_home'] + df['R_away']
 df['pushed_bets'] = df['Game_score'] == df['over_under']
 df = df.drop(list(df.loc[df['pushed_bets'] == True].index))
-#Defining Target Variable where 1 is over and 0 is under
+#Defining Target Variable where 1 is over and 0 is under and dropping the 
+#now unneeded variables
 df['Target_Var'] = (df['Game_score'] > df['over_under']) * 1
 df = df.drop(['pushed_bets',
               'Game_score'], axis = 1)
-
-
 
 #make a DF with only games that have odds (about half the whole dataset)
 odds_only = df.drop(list(df.loc[df['over_under'].isna()].index))
@@ -75,12 +57,10 @@ target_split = odds_only.loc[:,'Target_Var'].value_counts()[1] / (
 assert(target_split >= .485 and target_split <= .515)
 
 #Updating odds to European version for easier readability 
-from clean_functions import ContinentalOdds
 df['under_odds'] = df['under_odds'].apply(ContinentalOdds)
 df['over_odds'] = df['over_odds'].apply(ContinentalOdds)
 
 # Split and clean the weather data
-from clean_functions import clean_wDirection, clean_weather, clean_temp, clean_wSpeed
 new = df['weather_info'].str.split(",", expand = True)
 
 # Clean temperature
@@ -92,6 +72,7 @@ df['wind_direction'] = new[1].astype(str).apply(clean_wDirection)
 
 # Clean weather
 df['weather'] = new[2].astype(str).apply(clean_weather)
+head2 = df.head()
 
 #Encoding wind direction 
 wind_dir = pd.get_dummies(df.wind_direction, prefix='Wind_Direction').iloc[:,1:]
@@ -106,8 +87,10 @@ df = df.drop(['weather','weather_info'], axis = 1)
 #Transforming home pitcher names/hands to managable columns
 pitch_home = df['home_pitcher'].str.split('-', expand = True)
 #some splits had three columns, ensuring all pitchers have a 'hand'
-indexes = list(pitch_home[((pitch_home[1] == 'L') | (pitch_home[1] == 'R') == False).values].dropna().index)
-replacements = list(pitch_home[((pitch_home[1] == 'L') | (pitch_home[1] == 'R') == False).values].dropna()[2])
+indexes = list(pitch_home[((pitch_home[1] == 'L') | (pitch_home[1] == 'R') \
+                           == False).values].dropna().index)
+replacements = list(pitch_home[((pitch_home[1] == 'L') | \
+                                (pitch_home[1] == 'R') == False).values].dropna()[2])
 for i, r in zip(indexes,replacements):
     pitch_home.loc[i,1] = r
 #dropping the unneeded column, renaming columns
@@ -134,11 +117,15 @@ away_pitch_hand = pd.get_dummies(df.handed_away, prefix='away_pitcher_hand').ilo
 df = pd.concat([df,away_pitch_hand], axis=1)
 df = df.drop('handed_away', axis = 1)
 
+#turns out we don't need pitcher names either, so dropping them as well
+df = df.drop(['home_pitcher_name', 'away_pitcher_name'], axis = 1)
+
 # Clean time and date data
-from clean_functions_copy import clean_time
-df['start_time'] = pd.to_datetime(df['start_time'].astype(str).apply(clean_time)).dt.strftime('%H:%M:%S')
+df['start_time'] = pd.to_datetime(df['start_time'] \
+  .astype(str).apply(clean_time)).dt.strftime('%H:%M:%S')
 df['date_time'] = pd.to_datetime(df['date'] + ' ' + df['start_time'])
 df = df.drop(columns=['start_time', 'date'])
+
 # Adding column for rounded hour
 df['hour'] = df['date_time'].apply(lambda x: x.hour)
 
@@ -157,8 +144,17 @@ venues = pd.get_dummies(df.venue, prefix = 'played_at').iloc[:,1:]
 df = pd.concat([df,venues], axis=1)
 df = df.drop(['venue'], axis = 1)
 
+# Dropping home/away errors now as opposed to later, because we know
+# there was an issue in the pull, and we do not want to mistakingly
+# use them in any way.
+df = df.drop(['away_errors', 'home_errors' ], axis = 1)
 
-# 
+# exporting to csv file
+df.to_csv('merged_and_cleaned_dataset.csv')
+#recreating odds_only dataset for analysis that is needed and saving it
+odds_only = df.drop(list(df.loc[df['over_under'].isna()].index))
+odds_only.to_csv('merged_and_cleaned_odds_only_games_dataset.csv')
+
 
 
 
