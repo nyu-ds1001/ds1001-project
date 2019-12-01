@@ -72,7 +72,6 @@ df['wind_direction'] = new[1].astype(str).apply(clean_wDirection)
 
 # Clean weather
 df['weather'] = new[2].astype(str).apply(clean_weather)
-head2 = df.head()
 
 #Encoding wind direction 
 wind_dir = pd.get_dummies(df.wind_direction, prefix='Wind_Direction').iloc[:,1:]
@@ -132,12 +131,12 @@ df['hour'] = df['date_time'].apply(lambda x: x.hour)
 # One hot encoding home team
 home_team = pd.get_dummies(df.home_team, prefix = 'home_team').iloc[:,1:]
 df = pd.concat([df,home_team], axis=1)
-df = df.drop(['home_team'], axis = 1)
 
 # One hot encoding away team
 away_team = pd.get_dummies(df.away_team, prefix = 'away_team').iloc[:,1:]
 df = pd.concat([df,away_team], axis=1)
-df = df.drop(['away_team'], axis = 1)
+
+
 
 # One hot encoding venues
 venues = pd.get_dummies(df.venue, prefix = 'played_at').iloc[:,1:]
@@ -148,6 +147,11 @@ df = df.drop(['venue'], axis = 1)
 # there was an issue in the pull, and we do not want to mistakingly
 # use them in any way.
 df = df.drop(['away_errors', 'home_errors' ], axis = 1)
+
+#Adding encoded labels for team so moving avg function will work
+labelenc_team = preprocessing.LabelEncoder()
+df['home_team'] = labelenc_team.fit_transform(df['home_team'].astype(str))
+df['away_team'] = labelenc_team.transform(df['away_team'].astype(str))
 
 # exporting to csv file
 df.to_csv('merged_and_cleaned_dataset.csv')
