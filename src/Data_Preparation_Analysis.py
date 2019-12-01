@@ -91,14 +91,12 @@ df_des.to_csv(r'data_description.csv')
 #    fig = ax.get_figure()
 #    fig.savefig(f'exploration/histograms/{columnName}.pdf')
 
-# =============================================================================
-# # Generate moving averages per team for 30, 60 and 90 games. 'RE24_team_home'
-# for x in [30,60,90]:
-#     for (columnName, columnData) in df.loc[:,'AB_home':'SLG_home'].iteritems():
-#         y = columnName[:-5]
-#         print(y)
-#         df[f'{y}_MovAve{x}_home'], df[f'{y}_MovAve{x}_away'] = MovAveTeam(df, y, lngth=x)
-# =============================================================================
+# Generate moving averages per team for 30, 60 and 90 games. 'RE24_team_home'
+for x in [30,60,90]:
+    for (columnName, columnData) in df.loc[:,'AB_home':'SLG_home'].iteritems():
+        y = columnName[:-5]
+        print(y)
+        df[f'{y}_MovAve{x}_home'], df[f'{y}_MovAve{x}_away'] = MovAveTeam(df, y, lngth=x)
 
 # Calculate the elo of the teams
 df = EloTeam(df, start_elo = 1000, K = 30)

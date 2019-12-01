@@ -11,8 +11,15 @@ import math
 from sklearn import preprocessing
 import os 
 
-# Load local libraries
+# Change directory for functions
+os.chdir(r"..\src")
+
+# import moving average function 
+from featgen_functions import *
 from clean_functions import *
+
+# Change directory for data
+os.chdir(r"..\data")
 
 #importing dataset
 df = pd.read_csv('merged_var_generated.csv')
@@ -97,8 +104,10 @@ pitch_home = pitch_home.drop(2, axis = 1)
 pitch_home.columns = ['home_pitcher_name', 'handed_home']
 #Repeating the same process for away pitchers
 pitch_away = df['away_pitcher'].str.split('-', expand = True)
-indexes = list(pitch_away[((pitch_away[1] == 'L') | (pitch_away[1] == 'R') == False).values].dropna().index)
-replacements = list(pitch_away[((pitch_away[1] == 'L') | (pitch_away[1] == 'R') == False).values].dropna()[2])
+indexes = list(pitch_away[((pitch_away[1] == 'L') | \
+                           (pitch_away[1] == 'R') == False).values].dropna().index)
+replacements = list(pitch_away[((pitch_away[1] == 'L') | \
+                                (pitch_away[1] == 'R') == False).values].dropna()[2])
 for i, r in zip(indexes,replacements):
     pitch_away.loc[i,1] = r
 pitch_away = pitch_away.drop(2, axis = 1)
@@ -125,8 +134,9 @@ df['start_time'] = pd.to_datetime(df['start_time'] \
 df['date_time'] = pd.to_datetime(df['date'] + ' ' + df['start_time'])
 df = df.drop(columns=['start_time', 'date'])
 
-# Adding column for rounded hour
+# Adding column for rounded hour and month
 df['hour'] = df['date_time'].apply(lambda x: x.hour)
+df['month'] = df['date_time'].apply(lambda x: x.month)
 
 # One hot encoding home team
 home_team = pd.get_dummies(df.home_team, prefix = 'home_team').iloc[:,1:]
@@ -154,10 +164,10 @@ df['home_team'] = labelenc_team.fit_transform(df['home_team'].astype(str))
 df['away_team'] = labelenc_team.transform(df['away_team'].astype(str))
 
 # exporting to csv file
-df.to_csv('merged_and_cleaned_dataset.csv')
+df.to_csv('merged_and_cleaned_dataset.csv', index = False)
 #recreating odds_only dataset for analysis that is needed and saving it
 odds_only = df.drop(list(df.loc[df['over_under'].isna()].index))
-odds_only.to_csv('merged_and_cleaned_odds_only_games_dataset.csv')
+odds_only.to_csv('merged_and_cleaned_odds_only_games_dataset.csv', index = False)
 
 
 
