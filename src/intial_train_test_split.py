@@ -13,6 +13,7 @@ from sklearn import preprocessing
 import os 
 import matplotlib.pyplot as plt
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.svm import SVC
 
 # Change directory for data
 os.chdir(r"..\data")
@@ -39,25 +40,24 @@ X_test = test.drop('Target_Var', axis = 1)
 Y_train = train['Target_Var']
 Y_test = test['Target_Var']
 
+#scale the datasets
+X_train_scl = preprocessing.scale(X_train, axis=0)
+X_test_scl = preprocessing.scale(X_test, axis=0)
+
 # build initial version of model 
 forest = RandomForestClassifier(max_features= None, min_samples_split=30, 
                                 criterion='entropy')
 forest_pred = forest.fit(X_train, Y_train).predict(X_test)
-
 pred = forest_pred == Y_test
-
 accuracy = pred.value_counts()[1]/len(pred)
 
-
-
-    
-    
-    
-
-    
-
-
-
-
-
-
+# =============================================================================
+# # build better version of model
+# clf = SVC(gamma = 'scale',
+#           verbose = True,
+#           kernel = 'poly',
+#           degree = 3)
+# clf.fit(X_train_scl, Y_train) 
+# pred = clf.predict(X_test_scl) == Y_test
+# accuracy = pred.value_counts()[1]/len(pred)
+# =============================================================================
