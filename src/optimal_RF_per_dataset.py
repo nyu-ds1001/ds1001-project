@@ -105,7 +105,7 @@ pred_60 = rf_60.predict_proba(x_test_60)[:,1]
 pred_90 = rf_90.predict_proba(x_test_90)[:,1]
 
 # Write a function to plot the ROC of each model
-def plotROC(prediction, true_value, label_str, c):
+def plotROC(prediction, true_value, label_str):
     # Get the values that will be plotted
     fpr, tpr, thresh = roc_curve(true_value, prediction)
     AUC_value = auc(fpr, tpr)
@@ -117,25 +117,24 @@ def plotROC(prediction, true_value, label_str, c):
             accuracies.append(0 == t)
     accuracy = accuracies.count(True)/len(accuracies)            
     # Plot values returned above
-    plt.plot(fpr, tpr, label = label_str + ' (AUC = {0:2.3f}, Accuracy = {1:2.3f})'\
-             .format(AUC_value, accuracy), color=c)
+    plt.plot(fpr, tpr, label = label_str + ' (AUC= {0:2.3f}, Accuracy= {1:2.3f})'\
+             .format(AUC_value, accuracy))
     # Add diagnoal to show random prediction 
     plt.plot([0, 1], [0, 1], 'k--')
     # Add labels and title
     plt.xlabel('False Positive Rate')
     plt.ylabel('True Positive Rate')
-    plt.title('Cross-dataset comparison of RF models')
-    plt.xlim([0,1])
-    plt.ylim([0,1])
-    plt.legend(loc='lower right')
+    plt.title('Cross Dataset Comparison of RF Models')
+    plt.legend()
+    print(thresh)
     
 
 #Blank plot for better size
-plt.figure(figsize= (8,8))
-plotROC(pred_15, y_test_15, '15 Dataset', 'r')
-plotROC(pred_30, y_test_30, '30 Dataset', 'g')
-plotROC(pred_60, y_test_60, '60 Dataset', 'b')
-plotROC(pred_90, y_test_90, '90 Dataset', 'y')
+plt.figure(figsize= (7,5))
+plotROC(pred_15, y_test_15, '15 Dataset')
+plotROC(pred_30, y_test_30, '30 Dataset')
+plotROC(pred_60, y_test_60, '60 Dataset')
+plotROC(pred_90, y_test_90, '90 Dataset')
 
 def check_accuracy(threshold, prediction, actual):
     accuracies = []
@@ -173,9 +172,6 @@ feature_importances = pd.DataFrame(rf_15.feature_importances_,
                                    index = x_train_15.columns,
                                     columns=['importance']).\
                                    sort_values('importance',ascending=False)
-                                   
-                                   
-agg = pd.read_csv('accuracy_dataframe_aggregated.csv')
         
 
         
