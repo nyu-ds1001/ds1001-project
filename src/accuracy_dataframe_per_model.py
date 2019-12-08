@@ -41,13 +41,13 @@ mov_avs = [15,30,60,90]
 lists_ = []
 for p, a, m in zip(predictions, tests, mov_avs):
     for t in thresholds:
-        lists.append(check_accuracy_data(t, p, a) + [m, 'your_model_type'])
-        
-df = pd.DataFrame(lists)
+        lists_.append(check_accuracy_data(t, p, a) + [m, 'your_model_type'])
+
+df = pd.DataFrame(lists_)
 df.columns = ['Threshold', 'Accuracy', 'Percent_of_Samples', 'Dataset', 'Model']
 
 # Change directory for data
 os.chdir(r"..\data")
 
 # Save file with your model name 
-df.to_csv('accuracy_dataframe_your_model_type')
+df.to_csv('accuracy_dataframe_your_model_type.csv')

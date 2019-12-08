@@ -4,6 +4,7 @@ class CustomKFold:
 
     def split(self, df, y, groups=None):
         from sklearn.model_selection import StratifiedKFold
+        import numpy as np
 
         sk = StratifiedKFold(random_state=666, n_splits=self.n_splits, shuffle=True)
 
